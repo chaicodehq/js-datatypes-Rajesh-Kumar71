@@ -48,4 +48,69 @@
  */
 export function analyzeUPITransactions(transactions) {
   // Your code here
+  if (!Array.isArray(transactions) || transactions.length === 0){return null;}
+
+  const valid = transactions.filter((transaction) => {
+    if (!transaction || typeof transaction !== "object") return false;
+    if (transaction.type !== "credit" && transaction.type !=="debit") return false;
+    if (typeof transaction.amount !== "number" || !Number.isFinite(transaction.amount) || transaction.amount <= 0) return false;
+    return true;
+  });
+  if (valid.length ===0) {return null;}
+
+  const totalCredit = valid.filter((transaction) => transaction.type === "credit").reduce((sum, transaction) => sum + transaction.amount, 0);
+
+  const totalDebit = valid.filter((transaction) => transaction.type === "debit").reduce((sum, transaction) => sum + transaction.amount, 0);
+
+  const netBalance = totalCredit - totalDebit;
+
+  const transactionCount = valid.length;
+
+  const totalAmountAll = valid.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const avgTransaction = Math.round(totalAmountAll / transactionCount);
+
+  let highestTransaction = valid[0];
+  for (let i = 1; i < valid.length; i++){
+    if (valid[i].amount > highestTransaction.amount){
+      highestTransaction = valid[i];
+    }
+  }
+  const categoryBreakdown = valid.reduce((acc, transaction) => {
+    const key = transaction.category;
+    if(typeof key === "string" && key.length > 0){
+      acc[key] = (acc[key] || 0) + transaction.amount;
+    }
+    return acc;
+  }, {});
+
+  const contactCounts = {};
+  let frequentContact = valid[0].to;
+  let maxCount = 0;
+
+  for (const trans of valid){
+    const to = trans.to;
+    if (typeof to !== "string") continue;
+
+    contactCounts[to] = (contactCounts[to] || 0) + 1;
+
+    if (contactCounts[to] > maxCount){
+      maxCount =contactCounts[to];
+      frequentContact = to;
+    }
+  }
+  const allAbove100 = valid.every((transaction) => transaction.amount > 100);
+  const hasLargeTransaction = valid.some((transaction) => transaction.amount >= 5000);
+
+  return {
+    totalCredit,
+    totalDebit,
+    netBalance,
+    transactionCount,
+    avgTransaction,
+    highestTransaction,
+    categoryBreakdown,
+    frequentContact,
+    allAbove100,
+    hasLargeTransaction,
+  };
 }
